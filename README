@@ -1,0 +1,7 @@
+This module creates an RPM package from a description hashref.
+
+INSTALL:
+
+perl Makefile.PL
+make
+make install
