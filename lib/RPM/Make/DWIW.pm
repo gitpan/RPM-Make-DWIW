@@ -1,10 +1,11 @@
-# $Header: /usr/local/cvsroot/apb/lib/RPM-Make-DWIW/lib/RPM/Make/DWIW.pm,v 1.1 2010-02-22 07:04:21 asher Exp $
+# $Header: /usr/local/cvsroot/apb/lib/RPM-Make-DWIW/lib/RPM/Make/DWIW.pm,v 1.4 2010-03-08 06:10:49 asher Exp $
 
 package RPM::Make::DWIW;
 use strict;
+no warnings 'uninitialized';
 
 use vars qw( $VERSION );
-$VERSION = '0.1';
+$VERSION = '0.2';
 
 my $FINAL_RPM_PATH;
 my $TOP;
@@ -45,6 +46,7 @@ my $ITEM_VAL = {
     owner           => [ '', 1 ],
     group           => [ '', 1 ],
     defaults        => [ '', 0 ],
+    config_p        => [ '', 0 ],
 };
 
 ## example spec
@@ -68,19 +70,24 @@ my $X = {
         {
             defaults => 1,
             owner    => 'root',
-            group    => 'wheel',
+            group    => 'admin',
             mode     => '0644',
         },
         {
             src   => 'abc.txt',
-            dest  => '/home/y/bin/abc.txt',
+            dest  => '/usr/bin/abc.txt',
             mode  => '0755',
-            owner => 'yahoo',
-            group => 'wheel',
+            owner => 'cdplayer',
+            group => 'admin',
         },
         {
             src   => 'def.txt',
-            dest  => '/home/y/lib/def.txt',
+            dest  => '/usr/lib/def.txt',
+        },
+        {
+            src   => 'def.txt',
+            dest  => '/etc/cdplayer.conf',
+            config_p => 1,
         },
         {
             dest  => '/tmp/acme6',
@@ -158,15 +165,8 @@ sub mk_spec_file_line {
         die "Missing key: $k in item" unless defined $file->{ $k };
     }
     my $line = "%attr($file->{ mode } $file->{ owner } $file->{ group }) $file->{ dest }";
-    $line = "%config $line" if conf_p($file->{ dest });
+    $line = "%config $line" if $file->{ config_p };
     $line;
-}
-
-## is this a conf file?
-
-sub conf_p {
-    my $filename = shift;
-    return 0;
 }
 
 ## given spec hashref, write specfile
@@ -193,7 +193,7 @@ sub cpx {
         }
     }
     system('/bin/cp', $src, $dest) && die "Failed to cp '$src' to '$dest'";
-    system('/bin/chmod', $mode, $dest) && die "Failed to chmod '$dest'";
+    #system('/bin/chmod', $mode, $dest) && die "Failed to chmod '$dest'";
 }
     
 ## given spec hashref, cp necessary files into tmp tree
@@ -510,6 +510,11 @@ Unix user/group that you want the item to have after installation.
 =item type
 
 May be B<file> or B<dir>.  If it's B<file>, the item must have B<src>.
+
+=item config_p
+
+If config_p=1, this item is marked as a configuration file.  RPM handles
+them differently.
 
 =item defaults
 
